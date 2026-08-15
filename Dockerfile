@@ -1,24 +1,14 @@
-# ===== 阶段1: 构建 =====
-FROM rust:1-bookworm AS builder
-WORKDIR /app
-
-# Docker 构建环境：降低 LTO 避免交叉编译 OOM，移除 CI 专用 remap-path-prefix
-COPY .cargo/ .cargo/
-RUN sed -i 's/lto = "fat"/lto = "thin"/' .cargo/config.toml \
-    && sed -i '/remap-path-prefix/d' .cargo/config.toml
-
-# 复制全部源码
-COPY . .
-
-# 编译 release 版本
-RUN cargo build --release --bin CFnat --features web 2>&1
-
-# ===== 阶段2: 运行时 =====
+# ===== 多架构运行时镜像 =====
+# 二进制由 GitHub Actions 通过 cargo-zigbuild 预编译
+# 此 Dockerfile 只负责打包运行时环境
 FROM debian:bookworm-slim
+
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates curl jq && rm -rf /var/lib/apt/lists/*
 
-COPY --from=builder /app/target/release/CFnat /usr/local/bin/
+# TARGETARCH 由 Docker Buildx 自动注入 (amd64 或 arm64)
+ARG TARGETARCH
+COPY binaries/${TARGETARCH}/CFnat /usr/local/bin/
 COPY docker/entrypoint.sh /usr/local/bin/
 RUN chmod +x /usr/local/bin/CFnat /usr/local/bin/entrypoint.sh
 

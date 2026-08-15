@@ -22,8 +22,49 @@ env:
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:
+  # ===== 阶段1: 交叉编译二进制 =====
+  build-binaries:
+    name: 编译 ${{ matrix.platform.target }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        platform:
+          - target: x86_64-unknown-linux-musl
+            arch: amd64
+          - target: aarch64-unknown-linux-musl
+            arch: arm64
+
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 安装 Rust 工具链
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.platform.target }}
+
+      - name: 安装 Zig
+        uses: mlugg/setup-zig@v2
+        with:
+          version: master
+
+      - name: 编译二进制
+        run: |
+          cargo install --locked cargo-zigbuild
+          cargo zigbuild --release --target ${{ matrix.platform.target }} --features web
+
+      - name: 上传构建产物
+        uses: actions/upload-artifact@v4
+        with:
+          name: cfnat-${{ matrix.platform.arch }}
+          path: target/${{ matrix.platform.target }}/release/CFnat
+          retention-days: 1
+
+  # ===== 阶段2: 构建 Docker 镜像 =====
   build-and-push:
     name: 构建并推送 Docker 镜像
+    needs: [build-binaries]
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -32,6 +73,22 @@ jobs:
     steps:
       - name: 检出代码
         uses: actions/checkout@v4
+
+      - name: 下载 amd64 二进制
+        uses: actions/download-artifact@v4
+        with:
+          name: cfnat-amd64
+          path: binaries/amd64
+
+      - name: 下载 arm64 二进制
+        uses: actions/download-artifact@v4
+        with:
+          name: cfnat-arm64
+          path: binaries/arm64
+
+      - name: 设置二进制权限
+        run: |
+          chmod +x binaries/amd64/CFnat binaries/arm64/CFnat
 
       - name: 设置 QEMU（多架构模拟）
         uses: docker/setup-qemu-action@v3
@@ -53,16 +110,12 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
-            # 分支名标签
             type=ref,event=branch
             type=ref,event=pr
-            # 语义化版本标签（从 git tag 提取）
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}}
-            # 短 SHA
             type=sha,prefix=
-            # latest 标签
             type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || inputs.push_latest == true }}
 
       - name: 构建并推送 Docker 镜像
@@ -76,6 +129,3 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
-          build-args: |
-            BUILD_DATE=${{ github.event.head_commit.timestamp }}
-            VCS_REF=${{ github.sha }}
