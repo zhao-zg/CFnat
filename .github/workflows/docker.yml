@@ -44,7 +44,10 @@ jobs:
           version: master
 
       - name: 安装 cargo-zigbuild
-        run: cargo install cargo-zigbuild
+        run: cargo install --locked cargo-zigbuild
+
+      - name: 更新依赖锁文件
+        run: cargo update
 
       - name: 编译 amd64 二进制
         run: |
@@ -52,7 +55,7 @@ jobs:
           mkdir -p binaries/amd64
           cp target/x86_64-unknown-linux-musl/release/CFnat binaries/amd64/CFnat
           chmod +x binaries/amd64/CFnat
-          echo "amd64 binary size: $(du -h binaries/amd64/CFnat)"
+          ls -lh binaries/amd64/CFnat
 
       - name: 编译 arm64 二进制
         run: |
@@ -60,9 +63,9 @@ jobs:
           mkdir -p binaries/arm64
           cp target/aarch64-unknown-linux-musl/release/CFnat binaries/arm64/CFnat
           chmod +x binaries/arm64/CFnat
-          echo "arm64 binary size: $(du -h binaries/arm64/CFnat)"
+          ls -lh binaries/arm64/CFnat
 
-      - name: 设置 QEMU（多架构模拟）
+      - name: 设置 QEMU
         uses: docker/setup-qemu-action@v3
 
       - name: 设置 Docker Buildx
