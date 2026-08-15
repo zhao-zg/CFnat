@@ -2,13 +2,15 @@
 FROM rust:1.87-bookworm AS builder
 WORKDIR /app
 
-# 先复制依赖文件，利用 Docker 缓存加速增量构建
-COPY Cargo.toml Cargo.lock* ./
-COPY src/ ./src/
-COPY .cargo/ .cargo/
+# 复制所有源码
+COPY . .
 
-# 构建 CFnat 二进制（启用 web feature）
-RUN cargo build --release --bin CFnat --features web
+# Docker 构建环境不需要 CI 的 remap-path-prefix，覆盖 cargo 配置
+RUN sed -i '/remap-path-prefix/d' .cargo/config.toml
+
+# 生成 lockfile 并构建 CFnat 二进制（启用 web feature）
+RUN cargo generate-lockfile 2>/dev/null; \
+    cargo build --release --bin CFnat --features web
 
 # ===== 阶段2: 运行时 =====
 FROM debian:bookworm-slim
