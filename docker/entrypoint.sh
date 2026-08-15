@@ -31,7 +31,7 @@ fi
 
 # 可选: 测速并发数
 if [[ -n "${THREADS:-}" ]]; then
-    ARGS+=("-threads" "$THREADS")
+    ARGS+=("-n" "$THREADS")
 fi
 
 # 可选: 负载数量
@@ -41,12 +41,12 @@ fi
 
 # 可选: TLS 端口
 if [[ -n "${TLS_PORT:-}" ]]; then
-    ARGS+=("-tls-port" "$TLS_PORT")
+    ARGS+=("-tp" "$TLS_PORT")
 fi
 
 # 可选: HTTP 端口
 if [[ -n "${HTTP_PORT:-}" ]]; then
-    ARGS+=("-http-port" "$HTTP_PORT")
+    ARGS+=("-p" "$HTTP_PORT")
 fi
 
 # 可选: 测速地址
@@ -61,7 +61,7 @@ fi
 
 # 可选: 最大负载槽数
 if [[ -n "${MAX_STICKY_SLOTS:-}" ]]; then
-    ARGS+=("-max-sticky-slots" "$MAX_STICKY_SLOTS")
+    ARGS+=("-s" "$MAX_STICKY_SLOTS")
 fi
 
 # 自定义 IP（逗号分隔）

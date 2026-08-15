@@ -1,16 +1,17 @@
 # ===== 阶段1: 构建 =====
-FROM rust:1.87-bookworm AS builder
+FROM rust:1-bookworm AS builder
 WORKDIR /app
 
-# 复制所有源码
+# Docker 构建环境：降低 LTO 避免交叉编译 OOM，移除 CI 专用 remap-path-prefix
+COPY .cargo/ .cargo/
+RUN sed -i 's/lto = "fat"/lto = "thin"/' .cargo/config.toml \
+    && sed -i '/remap-path-prefix/d' .cargo/config.toml
+
+# 复制全部源码
 COPY . .
 
-# Docker 构建环境不需要 CI 的 remap-path-prefix，覆盖 cargo 配置
-RUN sed -i '/remap-path-prefix/d' .cargo/config.toml
-
-# 生成 lockfile 并构建 CFnat 二进制（启用 web feature）
-RUN cargo generate-lockfile 2>/dev/null; \
-    cargo build --release --bin CFnat --features web
+# 编译 release 版本
+RUN cargo build --release --bin CFnat --features web 2>&1
 
 # ===== 阶段2: 运行时 =====
 FROM debian:bookworm-slim
