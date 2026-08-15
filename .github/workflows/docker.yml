@@ -41,7 +41,7 @@ jobs:
       - name: 安装 Zig
         uses: mlugg/setup-zig@v2
         with:
-          version: master
+          version: 0.14.0
 
       - name: 安装 cargo-zigbuild
         run: cargo install --locked cargo-zigbuild
