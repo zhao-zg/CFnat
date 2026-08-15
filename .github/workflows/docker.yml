@@ -26,6 +26,10 @@ jobs:
   build-binaries:
     name: 编译 ${{ matrix.platform.target }}
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: write
+
     strategy:
       fail-fast: false
       matrix:
@@ -79,6 +83,7 @@ jobs:
     permissions:
       contents: read
       packages: write
+      actions: read
 
     steps:
       - name: 检出代码
