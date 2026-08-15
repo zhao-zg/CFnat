@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 import 'package:file_picker/file_picker.dart';
 import '../services/app_service.dart';
+import 'dns_config_panel.dart';
 
 class ConfigPanel extends StatefulWidget {
   final AppService service;
@@ -28,6 +29,8 @@ class _ConfigPanelState extends State<ConfigPanel> {
   final _tlsPortController = TextEditingController();
   final _httpPortController = TextEditingController();
   final _maxStickySlotsController = TextEditingController();
+  final _customIpsController = TextEditingController();
+  final _domainsController = TextEditingController();
   
   bool _isRunning = false;
   bool _connected = false;
@@ -59,6 +62,8 @@ class _ConfigPanelState extends State<ConfigPanel> {
     _tlsPortController.dispose();
     _httpPortController.dispose();
     _maxStickySlotsController.dispose();
+    _customIpsController.dispose();
+    _domainsController.dispose();
     super.dispose();
   }
 
@@ -76,6 +81,8 @@ class _ConfigPanelState extends State<ConfigPanel> {
       _tlsPortController.text = config.tlsPort.toString();
       _httpPortController.text = config.httpPort.toString();
       _maxStickySlotsController.text = config.maxStickySlots.toString();
+      _customIpsController.text = config.customIps?.join(',') ?? '';
+      _domainsController.text = config.domains?.join(',') ?? '';
       _lastConfig = config;
     }
   }
@@ -201,10 +208,24 @@ class _ConfigPanelState extends State<ConfigPanel> {
                 label: '本地服务',
                 enabled: !isRunning,
               ),
+              const SizedBox(height: 12),
+              _buildTextField(
+                controller: _customIpsController,
+                label: '自定义 IP (逗号分隔)',
+                enabled: !isRunning,
+              ),
+              const SizedBox(height: 12),
+              _buildTextField(
+                controller: _domainsController,
+                label: '优选域名 (逗号分隔)',
+                enabled: !isRunning,
+              ),
               const SizedBox(height: 16),
               _buildActionButtons(),
               const SizedBox(height: 16),
               _buildStatusCard(),
+              const SizedBox(height: 16),
+              DnsConfigPanel(service: widget.service),
             ]),
           ),
         ),
@@ -366,9 +387,25 @@ class _ConfigPanelState extends State<ConfigPanel> {
                 fontSize: fontSize,
               ),
               SizedBox(height: spacing),
+              _buildTextField(
+                controller: _customIpsController,
+                label: '自定义 IP',
+                enabled: !isRunning,
+                fontSize: fontSize,
+              ),
+              SizedBox(height: spacing),
+              _buildTextField(
+                controller: _domainsController,
+                label: '优选域名',
+                enabled: !isRunning,
+                fontSize: fontSize,
+              ),
+              SizedBox(height: spacing),
               _buildActionButtons(),
               SizedBox(height: spacing),
               _buildStatusCard(),
+              SizedBox(height: spacing),
+              DnsConfigPanel(service: widget.service),
             ]),
           ),
         ),
@@ -636,6 +673,12 @@ class _ConfigPanelState extends State<ConfigPanel> {
                     addr: _localServiceController.text.isNotEmpty 
                         ? _localServiceController.text : null,
                     maxStickySlots: int.tryParse(_maxStickySlotsController.text),
+                    customIps: _customIpsController.text.isNotEmpty
+                        ? _customIpsController.text.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList()
+                        : null,
+                    domains: _domainsController.text.isNotEmpty
+                        ? _domainsController.text.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList()
+                        : null,
                   ),
                   '启动',
                 );

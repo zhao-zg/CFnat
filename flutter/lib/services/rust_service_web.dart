@@ -36,6 +36,8 @@ class RustService extends AppService {
     List<String>? colo,
     String? addr,
     int? maxStickySlots,
+    List<String>? customIps,
+    List<String>? domains,
   }) async => false;
   @override
   Future<bool> stopService() async => false;
@@ -43,4 +45,10 @@ class RustService extends AppService {
   Future<List<LogEntry>> fetchLogs() async => [];
   @override
   Future<bool> clearLogs() async => false;
+  @override
+  Future<DnsUpdaterConfig?> getDnsConfig() async => null;
+  @override
+  Future<bool> updateDnsConfig(DnsUpdaterConfig config) async => false;
+  @override
+  Future<DnsUpdaterStatus?> getDnsStatus() async => null;
 }

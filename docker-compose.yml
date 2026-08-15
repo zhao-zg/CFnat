@@ -1,0 +1,28 @@
+version: "3.8"
+
+services:
+  cfnat:
+    image: ghcr.io/${GITHUB_REPOSITORY:-cfnat}/cfnat:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: cfnat
+    restart: unless-stopped
+    ports:
+      - "1234:1234"   # 转发端口
+      - "8080:8080"   # Web API 端口
+    volumes:
+      - ./ip.txt:/app/ip.txt:ro
+    environment:
+      - IP_FILE=/app/ip.txt
+      - API_ADDR=0.0.0.0:8080
+      - ADDR=0.0.0.0:1234
+      - DELAY_LIMIT=300
+      # - CUSTOM_IPS=1.1.1.1,1.0.0.1               # 自定义 IP，逗号分隔
+      # - DOMAINS=example.com,api.example.com      # 优选域名，逗号分隔
+      # DNS 更新器配置（通过 Web UI http://host:8080 配置）
+      # - CF_API_TOKEN=your_cloudflare_api_token
+      # - ZONE_NAME=example.com
+      # - RECORD_NAME=cf.example.com
+      # - DNS_INTERVAL=60
+      # - DNS_ENABLED=false

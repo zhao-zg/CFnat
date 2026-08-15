@@ -169,6 +169,8 @@ class ApiService extends AppService {
     List<String>? colo,
     String? addr,
     int? maxStickySlots,
+    List<String>? customIps,
+    List<String>? domains,
   }) async {
     try {
       final body = <String, dynamic>{
@@ -184,6 +186,8 @@ class ApiService extends AppService {
         'colo': colo,
         'addr': addr,
         'max_sticky_slots': maxStickySlots,
+        'custom_ips': customIps,
+        'domains': domains,
       }..removeWhere((key, value) => value == null);
 
       final response = await post(
@@ -256,6 +260,53 @@ class ApiService extends AppService {
     } catch (e) {
       debugPrint('清空日志失败: $e');
       return false;
+    }
+  }
+
+  @override
+  Future<DnsUpdaterConfig?> getDnsConfig() async {
+    try {
+      final response = await get(Uri.parse('/api/dns-config'));
+      if (response.statusCode == 200) {
+        return DnsUpdaterConfig.fromJson(json.decode(response.body));
+      }
+      return null;
+    } catch (e) {
+      debugPrint('获取 DNS 配置失败: $e');
+      return null;
+    }
+  }
+
+  @override
+  Future<bool> updateDnsConfig(DnsUpdaterConfig config) async {
+    try {
+      final response = await post(
+        Uri.parse('/api/dns-config'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode(config.toJson()),
+      );
+      if (response.statusCode == 200) {
+        final result = json.decode(response.body);
+        return result['success'] == true;
+      }
+      return false;
+    } catch (e) {
+      debugPrint('更新 DNS 配置失败: $e');
+      return false;
+    }
+  }
+
+  @override
+  Future<DnsUpdaterStatus?> getDnsStatus() async {
+    try {
+      final response = await get(Uri.parse('/api/dns-status'));
+      if (response.statusCode == 200) {
+        return DnsUpdaterStatus.fromJson(json.decode(response.body));
+      }
+      return null;
+    } catch (e) {
+      debugPrint('获取 DNS 状态失败: $e');
+      return null;
     }
   }
 }

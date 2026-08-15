@@ -22,10 +22,17 @@ abstract class AppService extends ChangeNotifier {
     List<String>? colo,
     String? addr,
     int? maxStickySlots,
+    List<String>? customIps,
+    List<String>? domains,
   });
   Future<bool> stopService();
   Future<List<LogEntry>> fetchLogs();
   Future<bool> clearLogs();
+
+  // DNS 更新器
+  Future<DnsUpdaterConfig?> getDnsConfig();
+  Future<bool> updateDnsConfig(DnsUpdaterConfig config);
+  Future<DnsUpdaterStatus?> getDnsStatus();
 }
 
 class StatusData {
@@ -150,6 +157,8 @@ class ConfigData {
   final String http;
   final String ipFile;
   final int maxStickySlots;
+  final List<String>? customIps;
+  final List<String>? domains;
 
   ConfigData({
     required this.addr,
@@ -163,6 +172,8 @@ class ConfigData {
     required this.http,
     required this.ipFile,
     required this.maxStickySlots,
+    this.customIps,
+    this.domains,
   });
 
   factory ConfigData.fromJson(Map<String, dynamic> json) {
@@ -178,6 +189,8 @@ class ConfigData {
       http: json['http'] as String,
       ipFile: json['ip_file'] as String,
       maxStickySlots: json['max_sticky_slots'] as int,
+      customIps: (json['custom_ips'] as List?)?.cast<String>(),
+      domains: (json['domains'] as List?)?.cast<String>(),
     );
   }
 
@@ -222,4 +235,72 @@ class ConfigData {
         maxStickySlots,
         colo,
       );
+}
+
+class DnsUpdaterConfig {
+  final String cfApiToken;
+  final String zoneName;
+  final String recordName;
+  final int intervalSecs;
+  final bool singleIp;
+  final bool updateAaaa;
+  final bool enabled;
+
+  DnsUpdaterConfig({
+    this.cfApiToken = '',
+    this.zoneName = 'example.com',
+    this.recordName = 'cf.example.com',
+    this.intervalSecs = 60,
+    this.singleIp = true,
+    this.updateAaaa = false,
+    this.enabled = false,
+  });
+
+  factory DnsUpdaterConfig.fromJson(Map<String, dynamic> json) {
+    return DnsUpdaterConfig(
+      cfApiToken: json['cf_api_token'] as String? ?? '',
+      zoneName: json['zone_name'] as String? ?? 'example.com',
+      recordName: json['record_name'] as String? ?? 'cf.example.com',
+      intervalSecs: json['interval_secs'] as int? ?? 60,
+      singleIp: json['single_ip'] as bool? ?? true,
+      updateAaaa: json['update_aaaa'] as bool? ?? false,
+      enabled: json['enabled'] as bool? ?? false,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'cf_api_token': cfApiToken,
+    'zone_name': zoneName,
+    'record_name': recordName,
+    'interval_secs': intervalSecs,
+    'single_ip': singleIp,
+    'update_aaaa': updateAaaa,
+    'enabled': enabled,
+  };
+}
+
+class DnsUpdaterStatus {
+  final bool running;
+  final String? lastUpdate;
+  final String? lastARecord;
+  final String? lastAaaaRecord;
+  final String? error;
+
+  DnsUpdaterStatus({
+    this.running = false,
+    this.lastUpdate,
+    this.lastARecord,
+    this.lastAaaaRecord,
+    this.error,
+  });
+
+  factory DnsUpdaterStatus.fromJson(Map<String, dynamic> json) {
+    return DnsUpdaterStatus(
+      running: json['running'] as bool? ?? false,
+      lastUpdate: json['last_update'] as String?,
+      lastARecord: json['last_a_record'] as String?,
+      lastAaaaRecord: json['last_aaaa_record'] as String?,
+      error: json['error'] as String?,
+    );
+  }
 }

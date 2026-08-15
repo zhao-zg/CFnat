@@ -1,0 +1,18 @@
+# 忽略构建产物
+target/
+flutter/
+
+# 忽略临时文件
+.temp/
+.git/
+.github/
+
+# 忽略 IDE
+.idea/
+.vscode/
+*.swp
+
+# 忽略文档和图片（非运行时必需）
+png/
+LICENSE
+README.md

@@ -124,6 +124,8 @@ pub struct ConfigOverrides {
     pub colo: Option<Vec<String>>,
     pub addr: Option<SocketAddr>,
     pub max_sticky_slots: Option<usize>,
+    pub custom_ips: Option<Vec<String>>,
+    pub domains: Option<Vec<String>>,
     #[cfg(feature = "web")]
     pub api_addr: Option<SocketAddr>,
 }

@@ -70,6 +70,8 @@ impl From<&StartRequest> for crate::core::types::ConfigOverrides {
             colo: req.colo.clone(),
             addr: req.addr,
             max_sticky_slots: req.max_sticky_slots,
+            custom_ips: req.custom_ips.clone(),
+            domains: req.domains.clone(),
             #[cfg(feature = "web")]
             api_addr: None,
         }
@@ -105,12 +107,29 @@ pub struct StartRequest {
     pub colo: Option<Vec<String>>,
     pub addr: Option<SocketAddr>,
     pub max_sticky_slots: Option<usize>,
+    /// 自定义 IP 列表，如 ["1.2.3.4", "5.6.7.8"]
+    pub custom_ips: Option<Vec<String>>,
+    /// 从域名解析 IP 的域名列表，如 ["bestproxy.seesforge.workers.dev"]
+    pub domains: Option<Vec<String>>,
 }
 
 #[derive(Serialize)]
 pub struct ApiResponse {
     pub success: bool,
     pub message: String,
+}
+
+/// DNS 更新器配置请求
+#[cfg(feature = "web")]
+#[derive(Deserialize)]
+pub struct DnsUpdaterRequest {
+    pub cf_api_token: String,
+    pub zone_name: String,
+    pub record_name: String,
+    pub interval_secs: u64,
+    pub single_ip: bool,
+    pub update_aaaa: bool,
+    pub enabled: bool,
 }
 
 #[cfg(all(feature = "web", not(feature = "flutter-web")))]

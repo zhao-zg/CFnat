@@ -6,6 +6,9 @@ use tower_http::cors::{Any, CorsLayer};
 
 use super::AppState;
 use crate::api::handlers::{get_config, get_status, health_check, start_service, stop_service, get_logs, clear_logs};
+
+#[cfg(feature = "web")]
+use crate::api::handlers::{get_dns_config, update_dns_config, get_dns_status};
 use crate::api::sse::stream_updates;
 
 #[cfg(feature = "web")]
@@ -23,6 +26,12 @@ pub fn create_router(state: AppState) -> Router {
         .route("/api/logs/clear", post(clear_logs))
         .layer(CorsLayer::new().allow_origin(Any).allow_methods(Any).allow_headers(Any))
         .with_state(state);
+
+    #[cfg(feature = "web")]
+    let router = router
+        .route("/api/dns-config", get(get_dns_config))
+        .route("/api/dns-config", post(update_dns_config))
+        .route("/api/dns-status", get(get_dns_status));
 
     #[cfg(feature = "web")]
     let router = router.fallback(serve_embedded_files);

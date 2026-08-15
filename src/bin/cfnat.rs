@@ -61,7 +61,7 @@ async fn run(service: Arc<ServiceState>) {
         println!("通过 Web 界面控制: http://{} ", actual_addr);
     }
 
-    match service.start() {
+    match service.start_async().await {
         Ok(_) => println!("服务已启动"),
         Err(e) => {
             eprintln!("启动失败: {}", e);

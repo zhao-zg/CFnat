@@ -125,6 +125,8 @@ class RustService extends AppService {
     List<String>? colo,
     String? addr,
     int? maxStickySlots,
+    List<String>? customIps,
+    List<String>? domains,
   }) async {
     try {
       final success = await rust.startService(
@@ -140,6 +142,8 @@ class RustService extends AppService {
         maxStickySlots: maxStickySlots,
         addr: addr,
         colo: colo,
+        customIps: customIps,
+        domains: domains,
       );
       if (success) {
         await fetchConfig();
@@ -191,4 +195,13 @@ class RustService extends AppService {
       return false;
     }
   }
+
+  @override
+  Future<DnsUpdaterConfig?> getDnsConfig() async => null;
+
+  @override
+  Future<bool> updateDnsConfig(DnsUpdaterConfig config) async => false;
+
+  @override
+  Future<DnsUpdaterStatus?> getDnsStatus() async => null;
 }

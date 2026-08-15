@@ -97,6 +97,28 @@ impl Args {
                         .and_then(|v| v.parse::<usize>().ok())
                         .map_or(config.max_sticky_slots, |v| v.clamp(1, 32));
                 }
+                "ip" => {
+                    if let Some(v) = v_opt {
+                        let ips: Vec<String> = v.split(',')
+                            .map(|s| s.trim().to_string())
+                            .filter(|s| !s.is_empty())
+                            .collect();
+                        if !ips.is_empty() {
+                            config.custom_ips = Some(ips);
+                        }
+                    }
+                }
+                "domain" => {
+                    if let Some(v) = v_opt {
+                        let domains: Vec<String> = v.split(',')
+                            .map(|s| s.trim().to_string())
+                            .filter(|s| !s.is_empty())
+                            .collect();
+                        if !domains.is_empty() {
+                            config.domains = Some(domains);
+                        }
+                    }
+                }
                 #[cfg(feature = "web")]
                 "api" => {
                     if let Some(ref v) = v_opt
@@ -202,6 +224,8 @@ pub fn print_help() {
         ("-tp", "TLS 流量使用的端口号", "443"),
         ("-p", "HTTP 流量使用的端口号", "80"),
         ("-f", "从文件读取 IP 或 CIDR", "ip.txt"),
+        ("-ip", "自定义 IP，逗号分隔", "未指定"),
+        ("-domain", "从域名解析 IP，逗号分隔", "未指定"),
     ];
 
     println!("\x1b[1;35m参数说明\x1b[0m\n");
