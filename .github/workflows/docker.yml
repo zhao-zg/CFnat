@@ -12,6 +12,10 @@ on:
     branches: [main, master]
   workflow_dispatch:
     inputs:
+      cfnat_version:
+        description: '上游 CFnat Release 标签 (默认 main-latest)'
+        type: string
+        default: 'main-latest'
       push_latest:
         description: '推送 latest 标签'
         type: boolean
@@ -20,10 +24,11 @@ on:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
+  UPSTREAM_REPO: GuangYu-yu/CFnat
 
 jobs:
   build-and-push:
-    name: 编译并构建 Docker 镜像
+    name: 下载二进制并构建 Docker 镜像
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -33,47 +38,32 @@ jobs:
       - name: 检出代码
         uses: actions/checkout@v4
 
-      - name: 安装 Rust 工具链
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: x86_64-unknown-linux-musl,aarch64-unknown-linux-musl
-
-      - name: 安装 Zig
-        uses: mlugg/setup-zig@v2
-        with:
-          version: 0.14.0
-
-      - name: 安装 cargo-zigbuild
-        run: cargo install --locked cargo-zigbuild
-
-      - name: 更新依赖锁文件
-        run: cargo update
-
-      - name: 编译 amd64 二进制
+      - name: 确定 Release 标签
+        id: release
         run: |
-          cargo zigbuild --release --target x86_64-unknown-linux-musl --features web
+          TAG="${{ inputs.cfnat_version || 'main-latest' }}"
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+          echo "使用上游 Release: $TAG"
+
+      - name: 下载 amd64 二进制
+        run: |
           mkdir -p binaries/amd64
-          cp target/x86_64-unknown-linux-musl/release/CFnat binaries/amd64/CFnat
+          curl -fSL -o cfnat_amd64.tar.gz \
+            "https://github.com/${{ env.UPSTREAM_REPO }}/releases/download/${{ steps.release.outputs.tag }}/CFnat_linux_amd64.tar.gz"
+          tar xzf cfnat_amd64.tar.gz -C binaries/amd64/
           chmod +x binaries/amd64/CFnat
           ls -lh binaries/amd64/CFnat
           file binaries/amd64/CFnat
 
-      - name: 编译 arm64 二进制
-        id: build_arm64
-        continue-on-error: true
+      - name: 下载 arm64 二进制
         run: |
-          cargo zigbuild --release --target aarch64-unknown-linux-musl --features web 2>&1; EXIT_CODE=$?
-          if [ $EXIT_CODE -ne 0 ]; then
-            echo "ARM64 编译失败 (exit code: $EXIT_CODE)"
-            echo "=== 尝试诊断 ==="
-          else
-            mkdir -p binaries/arm64
-            cp target/aarch64-unknown-linux-musl/release/CFnat binaries/arm64/CFnat
-            chmod +x binaries/arm64/CFnat
-            ls -lh binaries/arm64/CFnat
-            file binaries/arm64/CFnat
-          fi
-          exit $EXIT_CODE
+          mkdir -p binaries/arm64
+          curl -fSL -o cfnat_arm64.tar.gz \
+            "https://github.com/${{ env.UPSTREAM_REPO }}/releases/download/${{ steps.release.outputs.tag }}/CFnat_linux_arm64.tar.gz"
+          tar xzf cfnat_arm64.tar.gz -C binaries/arm64/
+          chmod +x binaries/arm64/CFnat
+          ls -lh binaries/arm64/CFnat
+          file binaries/arm64/CFnat
 
       - name: 设置 QEMU
         uses: docker/setup-qemu-action@v3
@@ -108,7 +98,7 @@ jobs:
         with:
           context: .
           file: ./Dockerfile
-          platforms: ${{ steps.build_arm64.outcome == 'success' && 'linux/amd64,linux/arm64' || 'linux/amd64' }}
+          platforms: linux/amd64,linux/arm64
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
