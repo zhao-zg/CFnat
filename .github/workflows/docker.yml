@@ -49,38 +49,31 @@ jobs:
       - name: 更新依赖锁文件
         run: cargo update
 
-      - name: 检查编译环境
-        run: |
-          echo "=== Rust 版本 ==="
-          rustc --version
-          cargo --version
-          echo "=== Zig 版本 ==="
-          zig version
-          echo "=== cargo-zigbuild 版本 ==="
-          cargo zigbuild --version || echo "zigbuild version check failed"
-          echo "=== Rust 目标 ==="
-          rustup target list --installed
-          echo "=== 环境变量 ==="
-          env | grep -i zig || true
-
       - name: 编译 amd64 二进制
         run: |
-          cargo zigbuild --release --target x86_64-unknown-linux-musl --features web 2>&1
-        continue-on-error: true
-
-      - name: 检查编译结果
-        run: |
-          echo "=== 检查 amd64 二进制 ==="
-          ls -la target/x86_64-unknown-linux-musl/release/CFnat 2>&1 || echo "amd64 二进制不存在"
-          file target/x86_64-unknown-linux-musl/release/CFnat 2>&1 || echo "file 检查失败"
+          cargo zigbuild --release --target x86_64-unknown-linux-musl --features web
+          mkdir -p binaries/amd64
+          cp target/x86_64-unknown-linux-musl/release/CFnat binaries/amd64/CFnat
+          chmod +x binaries/amd64/CFnat
+          ls -lh binaries/amd64/CFnat
+          file binaries/amd64/CFnat
 
       - name: 编译 arm64 二进制
+        id: build_arm64
+        continue-on-error: true
         run: |
-          cargo zigbuild --release --target aarch64-unknown-linux-musl --features web
-          mkdir -p binaries/arm64
-          cp target/aarch64-unknown-linux-musl/release/CFnat binaries/arm64/CFnat
-          chmod +x binaries/arm64/CFnat
-          ls -lh binaries/arm64/CFnat
+          cargo zigbuild --release --target aarch64-unknown-linux-musl --features web 2>&1; EXIT_CODE=$?
+          if [ $EXIT_CODE -ne 0 ]; then
+            echo "ARM64 编译失败 (exit code: $EXIT_CODE)"
+            echo "=== 尝试诊断 ==="
+          else
+            mkdir -p binaries/arm64
+            cp target/aarch64-unknown-linux-musl/release/CFnat binaries/arm64/CFnat
+            chmod +x binaries/arm64/CFnat
+            ls -lh binaries/arm64/CFnat
+            file binaries/arm64/CFnat
+          fi
+          exit $EXIT_CODE
 
       - name: 设置 QEMU
         uses: docker/setup-qemu-action@v3
@@ -115,7 +108,7 @@ jobs:
         with:
           context: .
           file: ./Dockerfile
-          platforms: linux/amd64,linux/arm64
+          platforms: ${{ steps.build_arm64.outcome == 'success' && 'linux/amd64,linux/arm64' || 'linux/amd64' }}
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
