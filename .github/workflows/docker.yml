@@ -49,10 +49,13 @@ jobs:
         with:
           version: master
 
+      - name: 安装 cargo-zigbuild
+        run: cargo install cargo-zigbuild
+
       - name: 编译二进制
         run: |
-          cargo install --locked cargo-zigbuild
-          cargo zigbuild --release --target ${{ matrix.platform.target }} --features web
+          echo "=== 编译 web feature ==="
+          cargo zigbuild --release --target ${{ matrix.platform.target }} --features web 2>&1
 
       - name: 上传构建产物
         uses: actions/upload-artifact@v4
