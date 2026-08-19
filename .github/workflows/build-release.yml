@@ -1,7 +1,5 @@
 name: 构建 Flutter 安装包
 
-retention-days: 1
-
 on:
   workflow_dispatch:
     inputs:
